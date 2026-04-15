@@ -33,7 +33,7 @@ OUTPUT_FILE = 'processed_data.csv'
 def extract(file_path):
     """
     Task 1: Doc du lieu JSON tu file.
-
+    
     Goi y:
        - Dung json.load() de doc file JSON
        - Xu ly truong hop file khong ton tai (FileNotFoundError)
@@ -41,11 +41,17 @@ def extract(file_path):
     Returns:
         list: Danh sach cac records (dictionaries)
     """
-    print(f"Extracting data from {file_path}...")
-    # TODO: Viet code doc file JSON o day
-    # Vi du:
-    #   with open(file_path, 'r') as f:
-    #       data = json.load(f)
+    try:
+        with open(file_path, 'r') as f:
+            data = json.load(f)
+        print(f"Extracting data from {file_path}...")
+        return data
+    except FileNotFoundError:
+        print(f"Error: File not found - {file_path}")
+        return []
+    except json.JSONDecodeError:
+        print(f"Error: Invalid JSON in file - {file_path}")
+        return []
     #   return data
     pass
 
@@ -67,12 +73,19 @@ def validate(data):
         list: Danh sach cac records hop le
     """
     valid_records = []
-    error_count = 0
+    dropped_records = []
 
     # TODO: Lap qua data, kiem tra tung record
     # Giu lai record hop le, dem record loi
-
-    print(f"Validation complete. Valid: {len(valid_records)}, Errors: {error_count}")
+    for record in data:
+        if record.get('price', 0) <= 0:
+            dropped_records.append({"id": record.get('id'), "reason": "Price <= 0"})
+            continue
+        if not record.get('category'):
+            dropped_records.append({"id": record.get('id'), "reason": "Empty category"})
+            continue
+        valid_records.append(record)
+    print(f"Validation complete. Valid: {len(valid_records)}, Errors: {len(dropped_records)}")
     return valid_records
 
 
@@ -95,7 +108,12 @@ def transform(data):
         pd.DataFrame: DataFrame da duoc transform
     """
     # TODO: Tao DataFrame va ap dung transformations
-    pass
+    df = pd.DataFrame(data)
+    df['discounted_price'] = df['price'] * 0.9
+    df['category'] = df['category'].str.title()
+    df['processed_at'] = datetime.datetime.now().isoformat()
+    return df
+
 
 
 def load(df, output_path):
@@ -106,7 +124,8 @@ def load(df, output_path):
        - df.to_csv(output_path, index=False)
     """
     # TODO: Luu DataFrame ra CSV
-    print(f"Data saved to {output_path}")
+    df.to_csv(output_path, index=False)
+    print(f"Successful load {len(df)} records saved to {output_path}")
 
 
 # ============================================================
